@@ -1,0 +1,32 @@
+[
+  {
+    "id": "project-1",
+    "name": "Project 1",
+    "description": "Sample description for Project 1",
+    "images": [
+      "uploads/project-1/img1.jpg",
+      "uploads/project-1/img2.jpg",
+      "uploads/project-1/img3.jpg"
+    ]
+  },
+  {
+    "id": "project-2",
+    "name": "Project 2",
+    "description": "Sample description for Project 2",
+    "images": [
+      "uploads/project-2/img1.jpg",
+      "uploads/project-2/img2.jpg",
+      "uploads/project-2/img3.jpg"
+    ]
+  },
+  {
+    "id": "project-3",
+    "name": "Project 3",
+    "description": "Sample description for Project 3",
+    "images": [
+      "uploads/project-3/img1.jpg",
+      "uploads/project-3/img2.jpg",
+      "uploads/project-3/img3.jpg"
+    ]
+  }
+]

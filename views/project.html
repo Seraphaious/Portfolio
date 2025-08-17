@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Project — Jacob Simmons</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="brand">Jacob Simmons</div>
+      <nav class="menu">
+        <a href="/">Home</a>
+        <div class="hr-space"></div>
+        <a href="/project.html?id=project-1">Project 1</a>
+        <a href="/project.html?id=project-2">Project 2</a>
+        <a href="/project.html?id=project-3">Project 3</a>
+        <div class="hr-space"></div>
+        <a href="/bibliography.html">Bibliography and contact</a>
+      </nav>
+    </aside>
+    <main class="content">
+      <div class="stage" id="stage">
+        <img id="mainImage" alt="Project image"/>
+        <div class="nav-zones" id="navZones" style="display:none;">
+          <div class="nav-zone" id="prevZone" title="Previous"></div>
+          <div class="nav-zone" id="nextZone" title="Next"></div>
+        </div>
+      </div>
+      <div class="thumb-grid" id="thumbGrid"></div>
+    </main>
+  </div>
+  <div class="controls">
+    <a href="#" id="prevBtn">Previous / </a>
+    <a href="#" id="nextBtn">Next</a>
+    <span id="pager">(0 of 0)</span>
+    <a href="#" id="toggleThumbs">Display thumbnails</a>
+  </div>
+  <script>
+  (function(){
+    const params = new URLSearchParams(location.search);
+    const id = params.get("id") || "project-1";
+
+    const mainImage = document.getElementById("mainImage");
+    const pager = document.getElementById("pager");
+    const toggle = document.getElementById("toggleThumbs");
+    const grid = document.getElementById("thumbGrid");
+    const navZones = document.getElementById("navZones");
+    const prevZone = document.getElementById("prevZone");
+    const nextZone = document.getElementById("nextZone");
+
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    let images = [];
+    let index = 0;
+    let thumbsVisible = false;
+
+    function updatePager(){
+      pager.textContent = `(${images.length ? index+1 : 0} of ${images.length})`;
+    }
+    function showImage(i){
+      if (!images.length) return;
+      index = (i + images.length) % images.length;
+      mainImage.src = "/" + images[index];
+      mainImage.alt = images[index];
+      updatePager();
+    }
+    function renderThumbs(){
+      grid.innerHTML = "";
+      images.forEach((im, i) => {
+        const el = document.createElement("img");
+        el.src = "/" + im;
+        el.alt = im;
+        el.addEventListener("click", (e)=>{
+          e.preventDefault();
+          thumbsVisible = false;
+          grid.style.display = "none";
+          document.getElementById("stage").style.display = "flex";
+          navZones.style.display = images.length > 1 ? "grid" : "none";
+          showImage(i);
+          toggle.textContent = "Display thumbnails";
+        });
+        grid.appendChild(el);
+      });
+    }
+    function toggleThumbnails(e){
+      e.preventDefault();
+      thumbsVisible = !thumbsVisible;
+      if (thumbsVisible){
+        renderThumbs();
+        grid.style.display = "grid";
+        document.getElementById("stage").style.display = "none";
+        navZones.style.display = "none";
+        toggle.textContent = "Hide thumbnails";
+      } else {
+        grid.style.display = "none";
+        document.getElementById("stage").style.display = "flex";
+        navZones.style.display = images.length > 1 ? "grid" : "none";
+        toggle.textContent = "Display thumbnails";
+      }
+    }
+
+    toggle.addEventListener("click", toggleThumbnails);
+    prevZone.addEventListener("click", ()=> showImage(index - 1));
+    nextZone.addEventListener("click", ()=> showImage(index + 1));
+    prevBtn.addEventListener("click", (e)=>{ e.preventDefault(); showImage(index - 1); });
+    nextBtn.addEventListener("click", (e)=>{ e.preventDefault(); showImage(index + 1); });
+
+    fetch(`/api/project/${encodeURIComponent(id)}`)
+      .then(r=>r.json())
+      .then(data => {
+        images = data.images || [];
+        if (!images.length){
+          mainImage.alt = "No images yet. Use /admin to add some.";
+          navZones.style.display = "none";
+          updatePager();
+          return;
+        }
+        navZones.style.display = images.length > 1 ? "grid" : "none";
+        showImage(0);
+      });
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Admin Dashboard</title>
+  <link rel="stylesheet" href="/styles.css"/>
+</head>
+<body>
+  <div style="max-width:1000px; margin:20px auto; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h1 style="font-family: Helvetica, Arial, sans-serif; font-weight:700;">Dashboard</h1>
+      <div>
+        <a href="/" style="margin-right:12px;">View site</a>
+        <button id="logoutBtn" style="padding:6px 10px; border:1px solid #333; background:#fff; border-radius:6px; cursor:pointer;">Logout</button>
+      </div>
+    </div>
+    <div style="border:1px solid #eee; padding:12px; border-radius:10px; margin:14px 0;">
+      <h3 style="font-family: Helvetica, Arial, sans-serif; font-weight:700;">Create Project</h3>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input id="newName" type="text" placeholder="Project name" style="padding:6px 8px; border:1px solid #ddd; border-radius:6px;"/>
+        <input id="newDesc" type="text" placeholder="Description" style="padding:6px 8px; border:1px solid #ddd; border-radius:6px; width:360px;"/>
+        <button id="createBtn" style="padding:6px 10px; border:1px solid #333; background:#fff; border-radius:6px; cursor:pointer;">Create</button>
+      </div>
+    </div>
+    <div id="projects"></div>
+  </div>
+  <script>
+  async function fetchProjects(){
+    const res = await fetch("/api/admin/projects");
+    if (!res.ok) {
+      if (res.status === 401) location.href = "/admin/login.html";
+      return;
+    }
+    return await res.json();
+  }
+  function h(html){ const d=document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+  async function render(){
+    const data = await fetchProjects();
+    const container = document.getElementById("projects");
+    container.innerHTML = "";
+    data.forEach(p => {
+      const block = h(`
+        <div style="border:1px solid #eee; padding:12px; border-radius:10px; margin:14px 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+            <div>
+              <strong>${p.name}</strong> <span style="color:#666;">(${p.id})</span>
+              <div style="color:#666; margin-top:4px;">${p.description || ""}</div>
+            </div>
+            <div>
+              <button class="delProject" data-id="${p.id}" style="padding:4px 8px;">Delete project</button>
+            </div>
+          </div>
+          <div style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;">
+            <input class="name" value="${p.name}" style="padding:6px 8px; border:1px solid #ddd; border-radius:6px;"/>
+            <input class="desc" value="${p.description || ""}" style="padding:6px 8px; border:1px solid #ddd; border-radius:6px; width:360px;"/>
+            <button class="saveProject" data-id="${p.id}" style="padding:4px 8px;">Save</button>
+            <a href="/project.html?id=${p.id}" target="_blank">Open</a>
+          </div>
+          <div style="margin-top:10px;">
+            <input class="uploader" type="file" accept="image/*" multiple />
+            <button class="uploadBtn" data-id="${p.id}" style="padding:4px 8px;">Upload</button>
+          </div>
+          <div class="images" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:8px; margin-top:10px;"></div>
+        </div>
+      `);
+      container.appendChild(block);
+      const list = block.querySelector(".images");
+      (p.images || []).forEach((im, idx)=>{
+        const card = h(`
+          <div style="border:1px solid #eee; padding:6px; border-radius:8px;">
+            <img src="/${im}" style="width:100%; height:100px; object-fit:cover; display:block;"/>
+            <div style="display:flex; gap:6px; margin-top:6px;">
+              <button class="up" data-id="${p.id}" data-file="${im}">↑</button>
+              <button class="down" data-id="${p.id}" data-file="${im}">↓</button>
+              <button class="del" data-id="${p.id}" data-file="${im}">Delete</button>
+            </div>
+            <div style="font-size:11px; color:#666; margin-top:4px;">#${idx+1}</div>
+          </div>
+        `);
+        list.appendChild(card);
+      });
+      // handlers
+      block.querySelector(".uploadBtn").addEventListener("click", async ()=>{
+        const pid = block.querySelector(".uploadBtn").getAttribute("data-id");
+        const input = block.querySelector(".uploader");
+        const fd = new FormData();
+        Array.from(input.files).forEach(f => fd.append("images", f));
+        const res = await fetch(`/api/admin/upload/${encodeURIComponent(pid)}`, { method: "POST", body: fd });
+        if (res.ok) render(); else alert("Upload failed");
+      });
+      block.querySelector(".saveProject").addEventListener("click", async ()=>{
+        const pid = block.querySelector(".saveProject").getAttribute("data-id");
+        const name = block.querySelector(".name").value;
+        const description = block.querySelector(".desc").value;
+        const res = await fetch(`/api/admin/projects/${encodeURIComponent(pid)}`, {
+          method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ name, description })
+        });
+        if (res.ok) render();
+      });
+      block.querySelector(".delProject").addEventListener("click", async ()=>{
+        if (!confirm("Delete this project?")) return;
+        const pid = block.querySelector(".delProject").getAttribute("data-id");
+        const res = await fetch(`/api/admin/projects/${encodeURIComponent(pid)}`, { method: "DELETE" });
+        if (res.ok) render();
+      });
+      block.querySelectorAll(".up").forEach(btn => btn.addEventListener("click", async ()=>{
+        const pid = btn.getAttribute("data-id");
+        const file = btn.getAttribute("data-file");
+        const proj = data.find(x=>x.id===pid);
+        const arr = proj.images.slice();
+        const i = arr.indexOf(file);
+        if (i>0){ const t=arr[i-1]; arr[i-1]=arr[i]; arr[i]=t; }
+        await fetch(`/api/admin/reorder/${encodeURIComponent(pid)}`, {
+          method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ order: arr })
+        });
+        render();
+      }));
+      block.querySelectorAll(".down").forEach(btn => btn.addEventListener("click", async ()=>{
+        const pid = btn.getAttribute("data-id");
+        const file = btn.getAttribute("data-file");
+        const proj = data.find(x=>x.id===pid);
+        const arr = proj.images.slice();
+        const i = arr.indexOf(file);
+        if (i>=0 && i < arr.length-1){ const t=arr[i+1]; arr[i+1]=arr[i]; arr[i]=t; }
+        await fetch(`/api/admin/reorder/${encodeURIComponent(pid)}`, {
+          method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ order: arr })
+        });
+        render();
+      }));
+      block.querySelectorAll(".del").forEach(btn => btn.addEventListener("click", async ()=>{
+        if (!confirm("Delete this image?")) return;
+        const pid = btn.getAttribute("data-id");
+        const file = btn.getAttribute("data-file");
+        await fetch(`/api/admin/image/${encodeURIComponent(pid)}`, {
+          method:"DELETE", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ filename: file })
+        });
+        render();
+      }));
+    });
+  }
+  document.getElementById("logoutBtn").addEventListener("click", async ()=>{
+    await fetch("/api/admin/logout", { method: "POST" });
+    location.href = "/admin/login.html";
+  });
+  document.getElementById("createBtn").addEventListener("click", async ()=>{
+    const name = document.getElementById("newName").value.trim();
+    const description = document.getElementById("newDesc").value.trim();
+    if (!name) return alert("Name required");
+    const res = await fetch("/api/admin/projects", {
+      method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ name, description })
+    });
+    if (res.ok){ document.getElementById("newName").value=""; document.getElementById("newDesc").value=""; render(); }
+  });
+  render();
+  </script>
+</body>
+</html>
