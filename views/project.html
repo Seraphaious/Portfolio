@@ -22,7 +22,8 @@
     </aside>
     <main class="content">
       <div class="stage" id="stage">
-        <img id="mainImage" alt="Project image"/>
+        <img id="mainImage" alt="Project image" style="display:none;"/>
+        <video id="mainVideo" controls style="display:none;"></video>
         <div class="nav-zones" id="navZones" style="display:none;">
           <div class="nav-zone" id="prevZone" title="Previous"></div>
           <div class="nav-zone" id="nextZone" title="Next"></div>
@@ -43,6 +44,7 @@
     const id = params.get("id") || "project-1";
 
     const mainImage = document.getElementById("mainImage");
+    const mainVideo = document.getElementById("mainVideo");
     const pager = document.getElementById("pager");
     const toggle = document.getElementById("toggleThumbs");
     const grid = document.getElementById("thumbGrid");
@@ -57,22 +59,52 @@
     let index = 0;
     let thumbsVisible = false;
 
+    function isVideoFile(filename) {
+      const videoExtensions = ['.mp4', '.webm', '.ogg', '.ogv', '.avi', '.mov', '.wmv', '.flv', '.mkv'];
+      const ext = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+      return videoExtensions.includes(ext);
+    }
+
     function updatePager(){
       pager.textContent = `(${images.length ? index+1 : 0} of ${images.length})`;
     }
     function showImage(i){
       if (!images.length) return;
       index = (i + images.length) % images.length;
-      mainImage.src = "/" + images[index];
-      mainImage.alt = images[index];
+      const currentFile = images[index];
+      const filePath = "/" + currentFile;
+      
+      if (isVideoFile(currentFile)) {
+        // Show video, hide image
+        mainImage.style.display = "none";
+        mainVideo.style.display = "block";
+        mainVideo.src = filePath;
+      } else {
+        // Show image, hide video
+        mainVideo.style.display = "none";
+        mainImage.style.display = "block";
+        mainImage.src = filePath;
+        mainImage.alt = currentFile;
+      }
       updatePager();
     }
     function renderThumbs(){
       grid.innerHTML = "";
       images.forEach((im, i) => {
-        const el = document.createElement("img");
-        el.src = "/" + im;
-        el.alt = im;
+        let el;
+        const filePath = "/" + im;
+        
+        if (isVideoFile(im)) {
+          el = document.createElement("video");
+          el.src = filePath;
+          el.muted = true; // Mute for autoplay policies
+          el.preload = "metadata"; // Load metadata for first frame
+        } else {
+          el = document.createElement("img");
+          el.src = filePath;
+          el.alt = im;
+        }
+        
         el.addEventListener("click", (e)=>{
           e.preventDefault();
           thumbsVisible = false;
@@ -114,6 +146,8 @@
         images = data.images || [];
         if (!images.length){
           mainImage.alt = "No images yet. Use /admin to add some.";
+          mainImage.style.display = "block";
+          mainVideo.style.display = "none";
           navZones.style.display = "none";
           updatePager();
           return;
