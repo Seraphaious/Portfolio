@@ -158,8 +158,8 @@
             el.src = thumbnailDataURL;
             el.alt = im;
             el.style.width = "100%";
-            el.style.height = "120px";
-            el.style.objectFit = "cover";
+            el.style.maxHeight = "200px";
+            el.style.objectFit = "contain";
             el.style.cursor = "pointer";
             
             // Add a play icon overlay to indicate it's a video
@@ -208,8 +208,8 @@
             el.autoplay = false;
             el.playsInline = true;
             el.style.width = "100%";
-            el.style.height = "120px";
-            el.style.objectFit = "cover";
+            el.style.maxHeight = "200px";
+            el.style.objectFit = "contain";
             el.style.cursor = "pointer";
             
             const wrapper = document.createElement("div");
