@@ -61,6 +61,13 @@
     
     // Load menu on page load
     loadMenu();
+    
+    // Listen for project order changes from admin
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'projectOrderChanged') {
+        loadMenu();
+      }
+    });
   </script>
 </body>
 </html>
