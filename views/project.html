@@ -77,6 +77,11 @@
         mainImage.style.display = "none";
         mainVideo.style.display = "block";
         mainVideo.src = "/" + currentFile;
+        mainVideo.autoplay = true;
+        mainVideo.muted = true;
+        mainVideo.loop = true;
+        mainVideo.playsInline = true;
+        mainVideo.controls = false;
         mainVideo.load(); // Reload the video element
       } else {
         mainVideo.style.display = "none";
@@ -97,6 +102,9 @@
           el.src = "/" + im;
           el.muted = true;
           el.preload = "metadata";
+          el.controls = false;
+          el.autoplay = false;
+          el.playsInline = true;
           el.style.width = "100%";
           el.style.height = "120px";
           el.style.objectFit = "cover";
