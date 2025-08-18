@@ -1,16 +1,5 @@
 [
   {
-    "id": "project-1",
-    "name": "Project 1",
-    "description": "Sample description for Project 1",
-    "images": [
-      "uploads/project-1/img1.jpg",
-      "uploads/project-1/img2.jpg",
-      "uploads/project-1/img3.jpg",
-      "uploads/project-1/1755506015480_IMG_2036.MOV"
-    ]
-  },
-  {
     "id": "project-2",
     "name": "Project 2",
     "description": "Sample description for Project 2",
@@ -18,6 +7,17 @@
       "uploads/project-2/img1.jpg",
       "uploads/project-2/img2.jpg",
       "uploads/project-2/img3.jpg"
+    ]
+  },
+  {
+    "id": "project-1",
+    "name": "Project 1",
+    "description": "Test",
+    "images": [
+      "uploads/project-1/img1.jpg",
+      "uploads/project-1/img2.jpg",
+      "uploads/project-1/img3.jpg",
+      "uploads/project-1/1755506015480_IMG_2036.MOV"
     ]
   },
   {
