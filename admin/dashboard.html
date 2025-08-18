@@ -52,6 +52,8 @@
               <div style="color:#666; margin-top:4px;">${p.description || ""}</div>
             </div>
             <div>
+              <button class="moveProjectUp" data-id="${p.id}" style="padding:4px 8px; margin-right:4px;">↑ Move Up</button>
+              <button class="moveProjectDown" data-id="${p.id}" style="padding:4px 8px; margin-right:4px;">↓ Move Down</button>
               <button class="delProject" data-id="${p.id}" style="padding:4px 8px;">Delete project</button>
             </div>
           </div>
@@ -111,6 +113,43 @@
         const pid = block.querySelector(".delProject").getAttribute("data-id");
         const res = await fetch(`/api/admin/projects/${encodeURIComponent(pid)}`, { method: "DELETE" });
         if (res.ok) render();
+      });
+      
+      // Project reordering handlers
+      block.querySelector(".moveProjectUp").addEventListener("click", async ()=>{
+        const pid = block.querySelector(".moveProjectUp").getAttribute("data-id");
+        const currentOrder = data.map(p => p.id);
+        const currentIndex = currentOrder.indexOf(pid);
+        if (currentIndex > 0) {
+          // Swap with previous project
+          [currentOrder[currentIndex - 1], currentOrder[currentIndex]] = 
+          [currentOrder[currentIndex], currentOrder[currentIndex - 1]];
+          
+          const res = await fetch("/api/admin/projects/reorder", {
+            method: "PUT", 
+            headers: {"Content-Type": "application/json"}, 
+            body: JSON.stringify({ order: currentOrder })
+          });
+          if (res.ok) render();
+        }
+      });
+      
+      block.querySelector(".moveProjectDown").addEventListener("click", async ()=>{
+        const pid = block.querySelector(".moveProjectDown").getAttribute("data-id");
+        const currentOrder = data.map(p => p.id);
+        const currentIndex = currentOrder.indexOf(pid);
+        if (currentIndex < currentOrder.length - 1) {
+          // Swap with next project
+          [currentOrder[currentIndex], currentOrder[currentIndex + 1]] = 
+          [currentOrder[currentIndex + 1], currentOrder[currentIndex]];
+          
+          const res = await fetch("/api/admin/projects/reorder", {
+            method: "PUT", 
+            headers: {"Content-Type": "application/json"}, 
+            body: JSON.stringify({ order: currentOrder })
+          });
+          if (res.ok) render();
+        }
       });
       block.querySelectorAll(".up").forEach(btn => btn.addEventListener("click", async ()=>{
         const pid = btn.getAttribute("data-id");

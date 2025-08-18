@@ -9,13 +9,10 @@
 <body>
   <div class="layout">
     <aside class="sidebar">
-      <div class="brand">Jacob Simmons</div>
-      <nav class="menu">
-        <a href="/">Home</a>
+      <a href="/" class="brand">Jacob Simmons</a>
+      <nav class="menu" id="menu">
         <div class="hr-space"></div>
-        <a href="/project.html?id=project-1">Project 1</a>
-        <a href="/project.html?id=project-2">Project 2</a>
-        <a href="/project.html?id=project-3">Project 3</a>
+        <!-- Projects will be loaded dynamically -->
         <div class="hr-space"></div>
         <a href="/bibliography.html">Bibliography and contact</a>
       </nav>
@@ -114,6 +111,14 @@
     }
     function showImage(i){
       if (!images.length) return;
+      
+      // Stop any currently playing video immediately
+      if (!mainVideo.paused) {
+        mainVideo.pause();
+      }
+      mainVideo.currentTime = 0;
+      mainVideo.src = "";
+      
       index = (i + images.length) % images.length;
       const currentFile = images[index];
       const currentIsVideo = isVideo(currentFile);
@@ -296,6 +301,34 @@
         showImage(0);
       });
   })();
+  
+  // Load dynamic menu
+  async function loadMenu() {
+    try {
+      const response = await fetch('/api/projects');
+      const projects = await response.json();
+      const menu = document.getElementById('menu');
+      const hrSpace = menu.querySelector('.hr-space');
+      
+      // Remove any existing project links
+      const existingProjects = menu.querySelectorAll('.project-link');
+      existingProjects.forEach(link => link.remove());
+      
+      // Add project links after the first hr-space
+      projects.forEach(project => {
+        const link = document.createElement('a');
+        link.href = `/project.html?id=${project.id}`;
+        link.textContent = project.name;
+        link.className = 'project-link';
+        hrSpace.parentNode.insertBefore(link, hrSpace.nextSibling);
+      });
+    } catch (error) {
+      console.error('Failed to load menu:', error);
+    }
+  }
+  
+  // Load menu on page load
+  loadMenu();
   </script>
 </body>
 </html>
