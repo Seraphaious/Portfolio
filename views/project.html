@@ -64,6 +64,51 @@
       return ['mp4', 'webm', 'mov', 'avi'].includes(ext);
     }
 
+    function generateVideoThumbnail(videoSrc) {
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.style.display = 'none';
+        video.muted = true;
+        video.preload = 'metadata';
+        video.playsInline = true;
+        video.crossOrigin = 'anonymous';
+        
+        document.body.appendChild(video);
+        
+        video.addEventListener('loadedmetadata', () => {
+          // Seek to 1 second or 10% of duration, whichever is smaller
+          const seekTime = Math.min(1, video.duration * 0.1);
+          video.currentTime = seekTime;
+        });
+        
+        video.addEventListener('seeked', () => {
+          try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const dataURL = canvas.toDataURL('image/jpeg', 0.8);
+            document.body.removeChild(video);
+            resolve(dataURL);
+          } catch (error) {
+            document.body.removeChild(video);
+            reject(error);
+          }
+        });
+        
+        video.addEventListener('error', (e) => {
+          document.body.removeChild(video);
+          reject(e);
+        });
+        
+        video.src = videoSrc;
+      });
+    }
+
     function updatePager(){
       pager.textContent = `(${images.length ? index+1 : 0} of ${images.length})`;
     }
@@ -91,59 +136,112 @@
       }
       updatePager();
     }
-    function renderThumbs(){
+    async function renderThumbs(){
       grid.innerHTML = "";
-      images.forEach((im, i) => {
+      
+      for (let i = 0; i < images.length; i++) {
+        const im = images[i];
         const isVideoFile = isVideo(im);
         let el;
         
         if (isVideoFile) {
-          el = document.createElement("video");
-          el.src = "/" + im;
-          el.muted = true;
-          el.preload = "metadata";
-          el.controls = false;
-          el.autoplay = false;
-          el.playsInline = true;
-          el.style.width = "100%";
-          el.style.height = "120px";
-          el.style.objectFit = "cover";
-          el.style.cursor = "pointer";
-          // Add a play icon overlay or some indication it's a video
-          const wrapper = document.createElement("div");
-          wrapper.style.position = "relative";
-          wrapper.style.display = "inline-block";
-          wrapper.style.width = "100%";
-          wrapper.appendChild(el);
-          
-          const playIcon = document.createElement("div");
-          playIcon.innerHTML = "▶";
-          playIcon.style.position = "absolute";
-          playIcon.style.top = "50%";
-          playIcon.style.left = "50%";
-          playIcon.style.transform = "translate(-50%, -50%)";
-          playIcon.style.background = "rgba(0,0,0,0.7)";
-          playIcon.style.color = "white";
-          playIcon.style.borderRadius = "50%";
-          playIcon.style.width = "30px";
-          playIcon.style.height = "30px";
-          playIcon.style.display = "flex";
-          playIcon.style.alignItems = "center";
-          playIcon.style.justifyContent = "center";
-          playIcon.style.fontSize = "12px";
-          playIcon.style.pointerEvents = "none";
-          wrapper.appendChild(playIcon);
-          
-          wrapper.addEventListener("click", (e)=>{
-            e.preventDefault();
-            thumbsVisible = false;
-            grid.style.display = "none";
-            document.getElementById("stage").style.display = "flex";
-            navZones.style.display = images.length > 1 ? "grid" : "none";
-            showImage(i);
-            toggle.textContent = "Display thumbnails";
-          });
-          grid.appendChild(wrapper);
+          try {
+            // Generate thumbnail from video using canvas
+            const thumbnailDataURL = await generateVideoThumbnail("/" + im);
+            
+            el = document.createElement("img");
+            el.src = thumbnailDataURL;
+            el.alt = im;
+            el.style.width = "100%";
+            el.style.height = "120px";
+            el.style.objectFit = "cover";
+            el.style.cursor = "pointer";
+            
+            // Add a play icon overlay to indicate it's a video
+            const wrapper = document.createElement("div");
+            wrapper.style.position = "relative";
+            wrapper.style.display = "inline-block";
+            wrapper.style.width = "100%";
+            wrapper.appendChild(el);
+            
+            const playIcon = document.createElement("div");
+            playIcon.innerHTML = "▶";
+            playIcon.style.position = "absolute";
+            playIcon.style.top = "50%";
+            playIcon.style.left = "50%";
+            playIcon.style.transform = "translate(-50%, -50%)";
+            playIcon.style.background = "rgba(0,0,0,0.7)";
+            playIcon.style.color = "white";
+            playIcon.style.borderRadius = "50%";
+            playIcon.style.width = "30px";
+            playIcon.style.height = "30px";
+            playIcon.style.display = "flex";
+            playIcon.style.alignItems = "center";
+            playIcon.style.justifyContent = "center";
+            playIcon.style.fontSize = "12px";
+            playIcon.style.pointerEvents = "none";
+            wrapper.appendChild(playIcon);
+            
+            wrapper.addEventListener("click", (e)=>{
+              e.preventDefault();
+              thumbsVisible = false;
+              grid.style.display = "none";
+              document.getElementById("stage").style.display = "flex";
+              navZones.style.display = images.length > 1 ? "grid" : "none";
+              showImage(i);
+              toggle.textContent = "Display thumbnails";
+            });
+            grid.appendChild(wrapper);
+          } catch (error) {
+            console.error('Failed to generate video thumbnail:', error);
+            // Fallback to original video element approach if canvas fails
+            el = document.createElement("video");
+            el.src = "/" + im;
+            el.muted = true;
+            el.preload = "metadata";
+            el.controls = false;
+            el.autoplay = false;
+            el.playsInline = true;
+            el.style.width = "100%";
+            el.style.height = "120px";
+            el.style.objectFit = "cover";
+            el.style.cursor = "pointer";
+            
+            const wrapper = document.createElement("div");
+            wrapper.style.position = "relative";
+            wrapper.style.display = "inline-block";
+            wrapper.style.width = "100%";
+            wrapper.appendChild(el);
+            
+            const playIcon = document.createElement("div");
+            playIcon.innerHTML = "▶";
+            playIcon.style.position = "absolute";
+            playIcon.style.top = "50%";
+            playIcon.style.left = "50%";
+            playIcon.style.transform = "translate(-50%, -50%)";
+            playIcon.style.background = "rgba(0,0,0,0.7)";
+            playIcon.style.color = "white";
+            playIcon.style.borderRadius = "50%";
+            playIcon.style.width = "30px";
+            playIcon.style.height = "30px";
+            playIcon.style.display = "flex";
+            playIcon.style.alignItems = "center";
+            playIcon.style.justifyContent = "center";
+            playIcon.style.fontSize = "12px";
+            playIcon.style.pointerEvents = "none";
+            wrapper.appendChild(playIcon);
+            
+            wrapper.addEventListener("click", (e)=>{
+              e.preventDefault();
+              thumbsVisible = false;
+              grid.style.display = "none";
+              document.getElementById("stage").style.display = "flex";
+              navZones.style.display = images.length > 1 ? "grid" : "none";
+              showImage(i);
+              toggle.textContent = "Display thumbnails";
+            });
+            grid.appendChild(wrapper);
+          }
         } else {
           el = document.createElement("img");
           el.src = "/" + im;
@@ -159,13 +257,13 @@
           });
           grid.appendChild(el);
         }
-      });
+      }
     }
-    function toggleThumbnails(e){
+    async function toggleThumbnails(e){
       e.preventDefault();
       thumbsVisible = !thumbsVisible;
       if (thumbsVisible){
-        renderThumbs();
+        await renderThumbs();
         grid.style.display = "grid";
         document.getElementById("stage").style.display = "none";
         navZones.style.display = "none";
