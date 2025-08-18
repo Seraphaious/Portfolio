@@ -108,6 +108,26 @@ app.post("/api/admin/projects", requireAdmin, (req,res) => {
   res.json(proj);
 });
 
+// Reorder projects (must come before parameterized routes)
+app.put("/api/admin/projects/reorder", requireAdmin, (req,res) => {
+  const { order } = req.body || {};
+  if (!Array.isArray(order)) return res.status(400).json({ error: "order must be array of project ids" });
+  const projects = readProjects();
+  const projectMap = new Map(projects.map(p => [p.id, p]));
+  
+  // Reorder projects based on the order array, keeping only existing projects
+  const reorderedProjects = order
+    .filter(id => projectMap.has(id))
+    .map(id => projectMap.get(id));
+  
+  // Add any projects that weren't in the order array at the end
+  const remainingProjects = projects.filter(p => !order.includes(p.id));
+  const finalProjects = [...reorderedProjects, ...remainingProjects];
+  
+  writeProjects(finalProjects);
+  res.json({ ok: true, projects: finalProjects });
+});
+
 app.put("/api/admin/projects/:id", requireAdmin, (req,res) => {
   const { id } = req.params;
   const { name, description } = req.body || {};
@@ -129,26 +149,6 @@ app.delete("/api/admin/projects/:id", requireAdmin, (req,res) => {
   writeProjects(projects);
   const dir = path.join(UPLOADS_DIR, id);
   fs.rm(dir, { recursive: true, force: true }, ()=> res.json({ ok: true }));
-});
-
-// Reorder projects
-app.put("/api/admin/projects/reorder", requireAdmin, (req,res) => {
-  const { order } = req.body || {};
-  if (!Array.isArray(order)) return res.status(400).json({ error: "order must be array of project ids" });
-  const projects = readProjects();
-  const projectMap = new Map(projects.map(p => [p.id, p]));
-  
-  // Reorder projects based on the order array, keeping only existing projects
-  const reorderedProjects = order
-    .filter(id => projectMap.has(id))
-    .map(id => projectMap.get(id));
-  
-  // Add any projects that weren't in the order array at the end
-  const remainingProjects = projects.filter(p => !order.includes(p.id));
-  const finalProjects = [...reorderedProjects, ...remainingProjects];
-  
-  writeProjects(finalProjects);
-  res.json({ ok: true, projects: finalProjects });
 });
 
 // Uploads
