@@ -130,7 +130,11 @@
             headers: {"Content-Type": "application/json"}, 
             body: JSON.stringify({ order: currentOrder })
           });
-          if (res.ok) render();
+          if (res.ok) {
+            render();
+            // Notify other tabs about the order change
+            localStorage.setItem('projectOrderChanged', Date.now().toString());
+          }
         }
       });
       
@@ -148,7 +152,11 @@
             headers: {"Content-Type": "application/json"}, 
             body: JSON.stringify({ order: currentOrder })
           });
-          if (res.ok) render();
+          if (res.ok) {
+            render();
+            // Notify other tabs about the order change
+            localStorage.setItem('projectOrderChanged', Date.now().toString());
+          }
         }
       });
       block.querySelectorAll(".up").forEach(btn => btn.addEventListener("click", async ()=>{

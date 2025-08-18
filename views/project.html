@@ -190,6 +190,7 @@
             wrapper.addEventListener("click", (e)=>{
               e.preventDefault();
               thumbsVisible = false;
+              grid.classList.remove("show");
               grid.style.display = "none";
               document.getElementById("stage").style.display = "flex";
               navZones.style.display = images.length > 1 ? "grid" : "none";
@@ -239,6 +240,7 @@
             wrapper.addEventListener("click", (e)=>{
               e.preventDefault();
               thumbsVisible = false;
+              grid.classList.remove("show");
               grid.style.display = "none";
               document.getElementById("stage").style.display = "flex";
               navZones.style.display = images.length > 1 ? "grid" : "none";
@@ -254,6 +256,7 @@
           el.addEventListener("click", (e)=>{
             e.preventDefault();
             thumbsVisible = false;
+            grid.classList.remove("show");
             grid.style.display = "none";
             document.getElementById("stage").style.display = "flex";
             navZones.style.display = images.length > 1 ? "grid" : "none";
@@ -269,11 +272,13 @@
       thumbsVisible = !thumbsVisible;
       if (thumbsVisible){
         await renderThumbs();
-        grid.style.display = "grid";
+        grid.classList.add("show");
+        grid.style.display = "block";
         document.getElementById("stage").style.display = "none";
         navZones.style.display = "none";
         toggle.textContent = "Hide thumbnails";
       } else {
+        grid.classList.remove("show");
         grid.style.display = "none";
         document.getElementById("stage").style.display = "flex";
         navZones.style.display = images.length > 1 ? "grid" : "none";
@@ -305,14 +310,18 @@
   // Load dynamic menu
   async function loadMenu() {
     try {
-      const response = await fetch('/api/projects');
-      const projects = await response.json();
       const menu = document.getElementById('menu');
       const hrSpace = menu.querySelector('.hr-space');
+      
+      // Hide menu temporarily to prevent flickering
+      menu.style.visibility = 'hidden';
       
       // Remove any existing project links
       const existingProjects = menu.querySelectorAll('.project-link');
       existingProjects.forEach(link => link.remove());
+      
+      const response = await fetch('/api/projects');
+      const projects = await response.json();
       
       // Add project links after the first hr-space
       projects.forEach(project => {
@@ -322,13 +331,26 @@
         link.className = 'project-link';
         hrSpace.parentNode.insertBefore(link, hrSpace.nextSibling);
       });
+      
+      // Show menu after loading
+      menu.style.visibility = 'visible';
     } catch (error) {
       console.error('Failed to load menu:', error);
+      // Show menu even if loading failed
+      const menu = document.getElementById('menu');
+      menu.style.visibility = 'visible';
     }
   }
   
   // Load menu on page load
   loadMenu();
+  
+  // Listen for project order changes from admin
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'projectOrderChanged') {
+      loadMenu();
+    }
+  });
   </script>
 </body>
 </html>
