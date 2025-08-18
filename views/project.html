@@ -22,7 +22,8 @@
     </aside>
     <main class="content">
       <div class="stage" id="stage">
-        <img id="mainImage" alt="Project image"/>
+        <img id="mainImage" alt="Project image" style="display:none;"/>
+        <video id="mainVideo" style="display:none; max-width:100%; max-height:100%; object-fit:contain;"></video>
         <div class="nav-zones" id="navZones" style="display:none;">
           <div class="nav-zone" id="prevZone" title="Previous"></div>
           <div class="nav-zone" id="nextZone" title="Next"></div>
@@ -43,6 +44,7 @@
     const id = params.get("id") || "project-1";
 
     const mainImage = document.getElementById("mainImage");
+    const mainVideo = document.getElementById("mainVideo");
     const pager = document.getElementById("pager");
     const toggle = document.getElementById("toggleThumbs");
     const grid = document.getElementById("thumbGrid");
@@ -57,32 +59,98 @@
     let index = 0;
     let thumbsVisible = false;
 
+    function isVideo(filename) {
+      const ext = filename.toLowerCase().split('.').pop();
+      return ['mp4', 'webm', 'mov', 'avi'].includes(ext);
+    }
+
     function updatePager(){
       pager.textContent = `(${images.length ? index+1 : 0} of ${images.length})`;
     }
     function showImage(i){
       if (!images.length) return;
       index = (i + images.length) % images.length;
-      mainImage.src = "/" + images[index];
-      mainImage.alt = images[index];
+      const currentFile = images[index];
+      const currentIsVideo = isVideo(currentFile);
+      
+      if (currentIsVideo) {
+        mainImage.style.display = "none";
+        mainVideo.style.display = "block";
+        mainVideo.src = "/" + currentFile;
+        mainVideo.load(); // Reload the video element
+      } else {
+        mainVideo.style.display = "none";
+        mainImage.style.display = "block";
+        mainImage.src = "/" + currentFile;
+        mainImage.alt = currentFile;
+      }
       updatePager();
     }
     function renderThumbs(){
       grid.innerHTML = "";
       images.forEach((im, i) => {
-        const el = document.createElement("img");
-        el.src = "/" + im;
-        el.alt = im;
-        el.addEventListener("click", (e)=>{
-          e.preventDefault();
-          thumbsVisible = false;
-          grid.style.display = "none";
-          document.getElementById("stage").style.display = "flex";
-          navZones.style.display = images.length > 1 ? "grid" : "none";
-          showImage(i);
-          toggle.textContent = "Display thumbnails";
-        });
-        grid.appendChild(el);
+        const isVideoFile = isVideo(im);
+        let el;
+        
+        if (isVideoFile) {
+          el = document.createElement("video");
+          el.src = "/" + im;
+          el.muted = true;
+          el.preload = "metadata";
+          el.style.width = "100%";
+          el.style.height = "120px";
+          el.style.objectFit = "cover";
+          el.style.cursor = "pointer";
+          // Add a play icon overlay or some indication it's a video
+          const wrapper = document.createElement("div");
+          wrapper.style.position = "relative";
+          wrapper.style.display = "inline-block";
+          wrapper.style.width = "100%";
+          wrapper.appendChild(el);
+          
+          const playIcon = document.createElement("div");
+          playIcon.innerHTML = "▶";
+          playIcon.style.position = "absolute";
+          playIcon.style.top = "50%";
+          playIcon.style.left = "50%";
+          playIcon.style.transform = "translate(-50%, -50%)";
+          playIcon.style.background = "rgba(0,0,0,0.7)";
+          playIcon.style.color = "white";
+          playIcon.style.borderRadius = "50%";
+          playIcon.style.width = "30px";
+          playIcon.style.height = "30px";
+          playIcon.style.display = "flex";
+          playIcon.style.alignItems = "center";
+          playIcon.style.justifyContent = "center";
+          playIcon.style.fontSize = "12px";
+          playIcon.style.pointerEvents = "none";
+          wrapper.appendChild(playIcon);
+          
+          wrapper.addEventListener("click", (e)=>{
+            e.preventDefault();
+            thumbsVisible = false;
+            grid.style.display = "none";
+            document.getElementById("stage").style.display = "flex";
+            navZones.style.display = images.length > 1 ? "grid" : "none";
+            showImage(i);
+            toggle.textContent = "Display thumbnails";
+          });
+          grid.appendChild(wrapper);
+        } else {
+          el = document.createElement("img");
+          el.src = "/" + im;
+          el.alt = im;
+          el.addEventListener("click", (e)=>{
+            e.preventDefault();
+            thumbsVisible = false;
+            grid.style.display = "none";
+            document.getElementById("stage").style.display = "flex";
+            navZones.style.display = images.length > 1 ? "grid" : "none";
+            showImage(i);
+            toggle.textContent = "Display thumbnails";
+          });
+          grid.appendChild(el);
+        }
       });
     }
     function toggleThumbnails(e){

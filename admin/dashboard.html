@@ -35,6 +35,10 @@
     return await res.json();
   }
   function h(html){ const d=document.createElement('div'); d.innerHTML = html.trim(); return d.firstChild; }
+  function isVideo(filename) {
+    const ext = filename.toLowerCase().split('.').pop();
+    return ['mp4', 'webm', 'mov', 'avi'].includes(ext);
+  }
   async function render(){
     const data = await fetchProjects();
     const container = document.getElementById("projects");
@@ -58,7 +62,7 @@
             <a href="/project.html?id=${p.id}" target="_blank">Open</a>
           </div>
           <div style="margin-top:10px;">
-            <input class="uploader" type="file" accept="image/*" multiple />
+            <input class="uploader" type="file" accept="image/*,video/*" multiple />
             <button class="uploadBtn" data-id="${p.id}" style="padding:4px 8px;">Upload</button>
           </div>
           <div class="images" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:8px; margin-top:10px;"></div>
@@ -67,15 +71,19 @@
       container.appendChild(block);
       const list = block.querySelector(".images");
       (p.images || []).forEach((im, idx)=>{
+        const isVideoFile = isVideo(im);
+        const mediaElement = isVideoFile 
+          ? `<video src="/${im}" style="width:100%; height:100px; object-fit:cover; display:block;" controls></video>`
+          : `<img src="/${im}" style="width:100%; height:100px; object-fit:cover; display:block;"/>`;
         const card = h(`
           <div style="border:1px solid #eee; padding:6px; border-radius:8px;">
-            <img src="/${im}" style="width:100%; height:100px; object-fit:cover; display:block;"/>
+            ${mediaElement}
             <div style="display:flex; gap:6px; margin-top:6px;">
               <button class="up" data-id="${p.id}" data-file="${im}">↑</button>
               <button class="down" data-id="${p.id}" data-file="${im}">↓</button>
               <button class="del" data-id="${p.id}" data-file="${im}">Delete</button>
             </div>
-            <div style="font-size:11px; color:#666; margin-top:4px;">#${idx+1}</div>
+            <div style="font-size:11px; color:#666; margin-top:4px;">#${idx+1} ${isVideoFile ? '(video)' : '(image)'}</div>
           </div>
         `);
         list.appendChild(card);
@@ -129,7 +137,7 @@
         render();
       }));
       block.querySelectorAll(".del").forEach(btn => btn.addEventListener("click", async ()=>{
-        if (!confirm("Delete this image?")) return;
+        if (!confirm("Delete this media file?")) return;
         const pid = btn.getAttribute("data-id");
         const file = btn.getAttribute("data-file");
         await fetch(`/api/admin/image/${encodeURIComponent(pid)}`, {
